@@ -1,43 +1,24 @@
 import * as vscode from "vscode";
 import winston from "winston";
 import TransportStream, { TransportStreamOptions } from "winston-transport";
-import { LoggingMessage } from "./LoggingMessage";
+import { LoggingMessage, LoggingMessageWithLevel } from ".";
 import * as fs from "fs";
-
-/**
- * Details for any errors.
- */
-export interface ErrorDetails extends LoggingDetails {
-  /**
-   * The error itself.
-   * If the error includes a stack attribute (which the exception does), then the error will be logged.
-   * If there is no stack attribute in the error, then nothing will be logged.
-   */
-  error?: unknown;
-}
-
-/**
- * Logging details for any log method.
- */
-export interface LoggingDetails {
-  /**
-   * If the user should also be notified via `vscode.window.showXXXMessage`. If there is a notification, then there will be also a button to open the output.
-   *
-   * This attribute will be ignored when you log to debug.
-   */
-  notifyUser?: boolean;
-}
 
 /**
  * A logger to log to the log file, output and window message.
  */
 export class Logger {
+  /**
+   * The instance of the logger.
+   */
   private static instance: Logger;
 
-  private logger: winston.Logger;
-  private outputChannel: vscode.OutputChannel;
-
-  private constructor(logger: winston.Logger, outputChannel: vscode.OutputChannel) {
+  /**
+   * Creates a new instance of the logger. This should be only called inside this class, because you should only have one instance of this class.
+   * @param logger - the logger that does all the logging
+   * @param outputChannel - the output channel were all the messages should be written to
+   */
+  private constructor(private logger: winston.Logger, private outputChannel: vscode.OutputChannel) {
     this.logger = logger;
     this.outputChannel = outputChannel;
   }
@@ -58,7 +39,7 @@ export class Logger {
    *
    * @param preserveFocus - When `true` the channel will not take focus.
    */
-  showOutputChannel(preserveFocus?: boolean) {
+  showOutputChannel(preserveFocus?: boolean): void {
     this.outputChannel.show(preserveFocus);
   }
 
@@ -67,34 +48,35 @@ export class Logger {
    *
    * @param loggingMessage - the message tht should be logged
    */
-  log(loggingMessage: LoggingMessage) {
+  log(loggingMessage: LoggingMessageWithLevel): void {
     switch (loggingMessage.level) {
       case "error":
-        this.error(loggingMessage.message, loggingMessage.error, loggingMessage.notifyUser);
+        this.error(loggingMessage);
         break;
       case "warn":
-        this.warn(loggingMessage.message, loggingMessage.notifyUser);
+        this.warn(loggingMessage);
         break;
       case "info":
-        this.info(loggingMessage.message, loggingMessage.notifyUser);
+        this.info(loggingMessage);
         break;
       case "debug":
-        this.debug(loggingMessage.message);
+        this.debug(loggingMessage);
         break;
     }
   }
 
   /**
    * Logs an error message to the log file and the output.
-   * @param message - a user friendly message of the error
-   * @param error - the error itself. If the error includes a stack attribute (which the exception does), then the error will be logged.
-   *     If there is no stack attribute in the error, then nothing will be logged.
-   * @param notifyUser - if the user should also be notified via `vscode.window.showErrorMessage`. If there is a notification, then there will be also a button to open the output.
+   *
+   * This method can notify any user via `vscode.window.showErrorMessage`.
+   * Since a error could also have more details, you have in the errorMessage for the user the possibility to open the output.
+   *
+   * @param loggingMessage - the message that should be logged
    */
-  error(message: string, error: unknown, notifyUser?: boolean): void {
-    this.logger.error(message, error);
-    if (notifyUser) {
-      vscode.window.showErrorMessage(message, "Open output").then((dialogResult) => {
+  error(loggingMessage: LoggingMessage): void {
+    this.logger.error(loggingMessage.message, loggingMessage.error);
+    if (loggingMessage.notifyUser) {
+      vscode.window.showErrorMessage(loggingMessage.message, "Open output").then((dialogResult) => {
         if (dialogResult === "Open output") {
           this.outputChannel.show();
         }
@@ -104,34 +86,41 @@ export class Logger {
 
   /**
    * Logs a warn to the log file and the output.
-   * @param message - a user friendly message
-   * @param notifyUser - if the user should also be notified via `vscode.window.showWarningMessage`
+   *
+   * This method can notify any user via `vscode.window.showWarningMessage`.
+   *
+   * @param loggingMessage - the message that should be logged
    */
-  warn(message: string, notifyUser?: boolean) {
-    this.logger.warn(message);
-    if (notifyUser) {
-      vscode.window.showWarningMessage(message);
+  warn(loggingMessage: LoggingMessage): void {
+    this.logger.warn(loggingMessage.message);
+    if (loggingMessage.notifyUser) {
+      vscode.window.showWarningMessage(loggingMessage.message);
     }
   }
 
   /**
    * Logs an information message to the log file and the output.
-   * @param message - a user friendly message
-   * @param notifyUser - if the user should be also notified via `vscode.window.showInformationMessage`
+   *
+   * This method can notify any user via `vscode.window.showInformationMessage`.
+   *
+   * @param loggingMessage - the message that should be logged
    */
-  info(message: string, notifyUser?: boolean) {
-    this.logger.info(message);
-    if (notifyUser) {
-      vscode.window.showInformationMessage(message);
+  info(loggingMessage: LoggingMessage): void {
+    this.logger.info(loggingMessage.message);
+    if (loggingMessage.notifyUser) {
+      vscode.window.showInformationMessage(loggingMessage.message);
     }
   }
 
   /**
    * Logs an debug message to the output file.
-   * @param message - the message
+   *
+   * This message will never notify any user, it will be just written to the log.
+   *
+   * @param loggingMessage - the message that should be logged
    */
-  debug(message: string) {
-    this.logger.debug(message);
+  debug(loggingMessage: LoggingMessage): void {
+    this.logger.debug(loggingMessage.message);
   }
 
   /**
@@ -144,6 +133,7 @@ export class Logger {
     const outputChannel = vscode.window.createOutputChannel(name);
     context.subscriptions.push(outputChannel);
 
+    // created the log folder, if it does not exist
     if (!fs.existsSync(context.logUri.fsPath)) {
       fs.mkdirSync(context.logUri.fsPath, { recursive: true });
     }
@@ -201,6 +191,7 @@ export class Logger {
 
   /**
    * Ends the logging.
+   * This should be called in the deactivate method.
    */
   static end() {
     if (this.instance) {
@@ -214,14 +205,18 @@ export class Logger {
  * This will write the logs to the `vscode.OutputChannel`.
  */
 class VSCodeOutputChannelTransport extends TransportStream {
-  private outputChannel: vscode.OutputChannel;
-
-  constructor(outputChannel: vscode.OutputChannel, opts?: TransportStreamOptions) {
+  /**
+   * Creates the custom transport for any logs.
+   * @param outputChannel - the output channel where any logs should be written
+   * @param opts - the options for the transport
+   */
+  constructor(private outputChannel: vscode.OutputChannel, opts?: TransportStreamOptions) {
     super(opts);
     this.outputChannel = outputChannel;
   }
 
-  public log(info: never, callback: () => void) {
+  log(info: never, callback: () => void) {
+    // appends the message to the output channel
     this.outputChannel.appendLine(info[Symbol.for("message")]);
 
     setImmediate(() => {
