@@ -78,7 +78,7 @@ export class Logger {
     if (loggingMessage.notifyUser) {
       vscode.window.showErrorMessage(loggingMessage.message, "Open output").then((dialogResult) => {
         if (dialogResult === "Open output") {
-          this.outputChannel.show();
+          this.showOutputChannel();
         }
       });
     }
@@ -149,7 +149,7 @@ export class Logger {
           format: "YYYY-MM-DD HH:mm:ss",
         }),
         winston.format.printf(
-          (info) => `${info.timestamp} [${info.level}]: ${info.message}${info?.metadata?.stack || ""}`
+          (info) => `${info.timestamp} [${info.level}] ${info.message}${info?.metadata?.stack || ""}`
         )
       ),
       transports: [
