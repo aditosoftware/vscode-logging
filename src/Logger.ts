@@ -180,7 +180,7 @@ export class Logger {
         new winston.transports.Console({
           format: winston.format.combine(
             winston.format.colorize(),
-            winston.format.printf((info) => `[${info.level}]: ${info.message}`)
+            winston.format.printf((info) => `[${info.level}]: ${info.message}${info?.metadata?.stack || ""}`)
           ),
         })
       );
