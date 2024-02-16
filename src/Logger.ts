@@ -148,6 +148,7 @@ export class Logger {
         winston.format.timestamp({
           format: "YYYY-MM-DD HH:mm:ss",
         }),
+        // The format will add a stack, if this was given in the meta information. This will only happen in the error log.
         winston.format.printf(
           (info) => `${info.timestamp} [${info.level}] ${info.message}${info?.metadata?.stack || ""}`
         )
@@ -192,6 +193,7 @@ export class Logger {
   /**
    * Ends the logging.
    * This should be called in the deactivate method.
+   * After this method call, no more logging is possible.
    */
   static end() {
     if (this.instance) {

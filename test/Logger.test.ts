@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 import path from "path";
 import * as fs from "fs";
 import Sinon from "sinon";
+
 /**
  * The message that will be used for any logging call.
  */
@@ -14,17 +15,30 @@ const LOGGING_MESSAGE = "myMessage";
  * Tests the logger.
  */
 suite("Logger tests", () => {
-  // create a minimal extension context for all tests
+  /**
+   * The name of this used logger.
+   */
   const loggerName = "MyLogger";
+
+  /**
+   * The folder where all the logs are stored
+   */
   const loggingFolder = path.join(__dirname, "..", "..", "temp");
+
+  /**
+   * The normal logging file where any message should be logged.
+   */
   const loggingFile = path.join(loggingFolder, `${loggerName}.log`);
+
+  /**
+   * The logging file for all error messages.
+   */
   const errorLogFile = path.join(loggingFolder, `error.log`);
 
-  const informationMessage = Sinon.spy(vscode.window, "showInformationMessage");
-  const warningMessage = Sinon.spy(vscode.window, "showWarningMessage");
-  const errorMessage = Sinon.spy(vscode.window, "showErrorMessage");
-
-  let outputChannel: Sinon.SinonSpiedInstance<vscode.OutputChannel>;
+  /**
+   * The output channel for later spying. This will be set after the creation in `suiteSetup`.
+   */
+  let outputChannel: vscode.OutputChannel;
 
   /**
    * Initializes the logger and checks if the initialization was valid.
@@ -39,8 +53,10 @@ suite("Logger tests", () => {
     // before any initialization, no logger can be returned
     assert.throws(() => Logger.getLogger(), new Error("no instance of the logger was created"), "before first init");
 
-    const outputChannelSpy = Sinon.spy(vscode.window, "createOutputChannel");
+    // spy the output channel creation
+    const outputChannelCreation = Sinon.spy(vscode.window, "createOutputChannel");
 
+    // create minimal extension context
     const uri = vscode.Uri.file(loggingFolder);
     const context: ExtensionContext = {
       subscriptions: [],
@@ -51,15 +67,23 @@ suite("Logger tests", () => {
     Logger.initializeLogger(context, loggerName);
 
     // the output channel should be created somewhere
-    Sinon.assert.called(outputChannelSpy);
-    // and take it for further checks
-    const actualOutputChannel: vscode.OutputChannel = outputChannelSpy.returnValues[0];
+    Sinon.assert.called(outputChannelCreation);
+    // and take the created output channel for further checks
+    outputChannel = outputChannelCreation.returnValues[0];
+    assert.equal(loggerName, outputChannel.name, "output channel should have the same name as the logger");
 
-    outputChannel = Sinon.spy(actualOutputChannel);
-
+    // check that the output channel was added to the subscriptions
     assert.strictEqual(1, context.subscriptions.length, "one subscription should be added");
+    assert.strictEqual(outputChannel, context.subscriptions[0], "output channel is the subscription");
 
     assert.ok(fs.existsSync(loggingFolder), "logging folder should be created");
+  });
+
+  /**
+   * Restore after every test all sinon spy object to its normal state.
+   */
+  teardown("restore everything", () => {
+    Sinon.restore();
   });
 
   /**
@@ -82,11 +106,13 @@ suite("Logger tests", () => {
    * Tests that the output channel should be shown when calling the corresponding method.
    */
   test("showOutputChannel", () => {
-    Sinon.reset();
+    const showMethod = Sinon.spy(outputChannel, "show");
 
     Logger.getLogger().showOutputChannel();
 
-    Sinon.assert.called(outputChannel.show);
+    Sinon.assert.called(showMethod);
+
+    showMethod.restore();
   });
 
   /**
@@ -287,17 +313,19 @@ suite("Logger tests", () => {
    *
    * @param expected - the expected text that should be written in the file. This text includes the level and message.
    *     It does not include any timestamp because they are removed before the comparison
-   * @param callVerify - the verify checks if any of the vscode messages are called to show any info, warn or error message
+   * @param showMessage - the verify checks if any of the vscode messages are called to show any info, warn or error message
    *     If any call happens, then the message of the method will be compared
    * @param loggerCall - the call of the log method. This happens after the stubbing initialization
    */
-  function assertLogging(expected: string, callVerify: ShowMessages, loggerCall: () => void) {
-    // reset the call history of the spy elements
-    // informationMessage.resetHistory();
-    // warningMessage.resetHistory();
-    // errorMessage.resetHistory();
-    Sinon.resetHistory();
+  function assertLogging(expected: string, showMessage: ShowMessages, loggerCall: () => void) {
+    // create necessary spy objects
+    const informationMessage = Sinon.spy(vscode.window, "showInformationMessage");
+    const warningMessage = Sinon.spy(vscode.window, "showWarningMessage");
+    const errorMessage = Sinon.spy(vscode.window, "showErrorMessage");
+    const appendLine = Sinon.spy(outputChannel, "appendLine");
 
+    // reset the content of any log file.
+    // This is called only in the assert function, because otherwise (when be done in teardown), you can not see the real file content after a test.
     fs.writeFileSync(loggingFile, "");
     fs.writeFileSync(errorLogFile, "");
 
@@ -306,35 +334,38 @@ suite("Logger tests", () => {
 
     // assert the logged message
     assert.strictEqual(expected, readLoggingFile(loggingFile), "normal logging file");
-    assert.strictEqual(callVerify.errorLog ? expected : "", readLoggingFile(errorLogFile), "error logging file");
+    assert.strictEqual(showMessage.errorLog ? expected : "", readLoggingFile(errorLogFile), "error logging file");
 
     // checks that the message was written to the output channel
-    if (callVerify.outputChannel) {
-      Sinon.assert.calledWith(outputChannel.appendLine, Sinon.match(expected));
+    if (showMessage.outputChannel) {
+      Sinon.assert.calledWith(appendLine, Sinon.match(expected));
     } else {
-      Sinon.assert.notCalled(outputChannel.appendLine);
+      Sinon.assert.notCalled(appendLine);
     }
 
     // check if information message is called
-    if (callVerify.informationMessage) {
+    if (showMessage.informationMessage) {
       Sinon.assert.calledWith(informationMessage, LOGGING_MESSAGE);
     } else {
       Sinon.assert.notCalled(informationMessage);
     }
 
     // check if warning message is called
-    if (callVerify.warningMessage) {
+    if (showMessage.warningMessage) {
       Sinon.assert.calledWith(warningMessage, LOGGING_MESSAGE);
     } else {
       Sinon.assert.notCalled(warningMessage);
     }
 
     // check if error message is called
-    if (callVerify.errorMessage) {
+    if (showMessage.errorMessage) {
       Sinon.assert.calledWith(errorMessage, LOGGING_MESSAGE);
     } else {
       Sinon.assert.notCalled(errorMessage);
     }
+
+    // restore all spy objects
+    Sinon.restore();
   }
 });
 
@@ -347,9 +378,9 @@ function readLoggingFile(filename: string): string {
   assert.ok(fs.existsSync(filename), "logging file is there");
   const fileContent = fs.readFileSync(filename, { encoding: "utf-8" });
 
-  // Date Pattern is YYYY-MM-DD hh:mi:ss and a space
-  const dateRegex = /\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\s*/g;
-
+  // Date Pattern is YYYY-MM-DD HH:mm:ss
+  const dateRegex = /\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/g;
+  // remove the from the log file
   return fileContent.replace(dateRegex, "").trim();
 }
 
