@@ -1,6 +1,6 @@
 {
   "name": "@aditosoftware/vscode-logging",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Logging for any vscode extension",
   "main": "out/index.js",
   "types": "out/index.d.ts",
