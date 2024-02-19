@@ -1,5 +1,4 @@
 import { Logger, LoggingMessage, LoggingMessageWithLevel } from "../src";
-import { ExtensionContext } from "vscode";
 import assert from "assert";
 import * as vscode from "vscode";
 import path from "path";
@@ -58,10 +57,10 @@ suite("Logger tests", () => {
 
     // create minimal extension context
     const uri = vscode.Uri.file(loggingFolder);
-    const context: ExtensionContext = {
+    const context: vscode.ExtensionContext = {
       subscriptions: [],
       logUri: uri,
-    } as unknown as ExtensionContext;
+    } as unknown as vscode.ExtensionContext;
 
     // initialize the logger
     Logger.initializeLogger(context, loggerName);
