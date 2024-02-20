@@ -1,0 +1,14 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+temp
+
+# results from local testing of pipeline elements
+coverage
+eslint-results.json
+.gitlab-ci-local
+
+# misc
+.DS_Store
