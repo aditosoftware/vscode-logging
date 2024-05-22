@@ -200,6 +200,15 @@ export class Logger {
       this.instance.logger.end();
     }
   }
+
+  /**
+   * Clears the output channel.
+   */
+  clear() {
+    if (this) {
+      this.outputChannel.clear();
+    }
+  }
 }
 
 /**

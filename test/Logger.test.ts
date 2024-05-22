@@ -308,6 +308,20 @@ suite("Logger tests", () => {
   });
 
   /**
+   * Tests the clear method of the logger.
+   */
+  test("clear log file", () => {
+    // create a spy object for the clear method
+    const clear = Sinon.spy(outputChannel, "clear");
+
+    // clear the log file
+    Logger.getLogger().clear();
+
+    // check if the clear method was called
+    Sinon.assert.calledOnce(clear);
+  });
+
+  /**
    * Asserts that the logging is working as expected.
    *
    * @param expected - the expected text that should be written in the file. This text includes the level and message.

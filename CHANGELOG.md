@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and and th
 
 ## [Unreleased]
 
+## 1.0.1
+
+### Added
+
+- "Logger.getLogger().clear()" is now available to clear the output channel
+
 ## 1.0.0
 
 ### Added
