@@ -19,5 +19,9 @@
     "titleBar.inactiveForeground": "#e7e7e799"
   },
   "peacock.color": "#dd0531",
-  "typescript.tsserver.experimental.enableProjectDiagnostics": true
+  "typescript.tsserver.experimental.enableProjectDiagnostics": true,
+  "sonarlint.connectedMode.project": {
+    "connectionId": "SonarQube",
+    "projectKey": "plattform-designer-vscode-logging"
+  }
 }
