@@ -2,6 +2,7 @@
   "name": "@aditosoftware/vscode-logging",
   "version": "1.0.1",
   "description": "Logging for any vscode extension",
+  "license": "MIT",
   "main": "out/src/index.js",
   "types": "out/src/index.d.ts",
   "files": [
