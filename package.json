@@ -11,21 +11,19 @@
   "scripts": {
     "compile": "tsc -p ./",
     "lint": "eslint .",
+    "lint:fix": "npm run lint -- --fix",
     "pretest": "npm run compile",
     "test": "vscode-test",
     "coverage": "npm run test -- --coverage --coverage-output ./coverage --coverage-reporter html --coverage-reporter text"
   },
   "devDependencies": {
+    "@aditosoftware/eslint-config-adito-platform": "^0.0.1",
     "@types/mocha": "^10.0.6",
     "@types/node": "20.x",
     "@types/sinon": "^17.0.3",
     "@types/vscode": "^1.84.0",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
     "@vscode/test-cli": "^0.0.6",
     "@vscode/test-electron": "^2.3.9",
-    "eslint": "^8.56.0",
-    "eslint-plugin-tsdoc": "^0.2.17",
     "sinon": "^17.0.1",
     "typescript": "^5.3.3"
   },
