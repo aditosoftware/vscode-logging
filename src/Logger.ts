@@ -15,6 +15,7 @@ export class Logger {
 
   /**
    * Creates a new instance of the logger. This should be only called inside this class, because you should only have one instance of this class.
+   *
    * @param logger - the logger that does all the logging
    * @param outputChannel - the output channel were all the messages should be written to
    */
@@ -25,6 +26,7 @@ export class Logger {
 
   /**
    * Returns the singleton instance of the logger. Please note that you need to call `initializeLogger` once before getting the logger.
+   *
    * @returns - the logger of the extension.
    */
   static getLogger(): Logger {
@@ -76,11 +78,16 @@ export class Logger {
   error(loggingMessage: LoggingMessage): void {
     this.logger.error(loggingMessage.message, loggingMessage.error);
     if (loggingMessage.notifyUser) {
-      vscode.window.showErrorMessage(loggingMessage.message, "Open output").then((dialogResult) => {
-        if (dialogResult === "Open output") {
-          this.showOutputChannel();
+      vscode.window.showErrorMessage(loggingMessage.message, {}, "Open output").then(
+        (dialogResult) => {
+          if (dialogResult === "Open output") {
+            this.showOutputChannel();
+          }
+        },
+        (error) => {
+          this.error({ message: "Error showing the error message", error });
         }
-      });
+      );
     }
   }
 
@@ -94,7 +101,13 @@ export class Logger {
   warn(loggingMessage: LoggingMessage): void {
     this.logger.warn(loggingMessage.message);
     if (loggingMessage.notifyUser) {
-      vscode.window.showWarningMessage(loggingMessage.message);
+      vscode.window.showWarningMessage(loggingMessage.message).then(
+        // no result to handle
+        () => {},
+        (error) => {
+          this.error({ message: "Error showing the warning message", error });
+        }
+      );
     }
   }
 
@@ -108,7 +121,13 @@ export class Logger {
   info(loggingMessage: LoggingMessage): void {
     this.logger.info(loggingMessage.message);
     if (loggingMessage.notifyUser) {
-      vscode.window.showInformationMessage(loggingMessage.message);
+      vscode.window.showInformationMessage(loggingMessage.message).then(
+        // no result to handle
+        () => {},
+        (error) => {
+          this.error({ message: "Error showing the info message", error });
+        }
+      );
     }
   }
 
@@ -125,6 +144,7 @@ export class Logger {
 
   /**
    * Initializes the logger. This needs to be done in the `activate` method of the extension.
+   *
    * @param context - the context where the logger needs to be registered.
    * @param name - the name of the extension. This will be also used as the name for the output channel as well as the name for the main file
    */
@@ -195,7 +215,7 @@ export class Logger {
    * This should be called in the deactivate method.
    * After this method call, no more logging is possible.
    */
-  static end() {
+  static end(): void {
     if (this.instance) {
       this.instance.logger.end();
     }
@@ -204,7 +224,7 @@ export class Logger {
   /**
    * Clears the output channel.
    */
-  clear() {
+  clear(): void {
     if (this) {
       this.outputChannel.clear();
     }
@@ -218,6 +238,7 @@ export class Logger {
 class VSCodeOutputChannelTransport extends TransportStream {
   /**
    * Creates the custom transport for any logs.
+   *
    * @param outputChannel - the output channel where any logs should be written
    * @param opts - the options for the transport
    */
@@ -226,7 +247,10 @@ class VSCodeOutputChannelTransport extends TransportStream {
     this.outputChannel = outputChannel;
   }
 
-  log(info: never, callback: () => void) {
+  /**
+   *@override
+   */
+  log(info: never, callback: () => void): void {
     // appends the message to the output channel
     this.outputChannel.appendLine(info[Symbol.for("message")]);
 

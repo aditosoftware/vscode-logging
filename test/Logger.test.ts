@@ -180,6 +180,30 @@ suite("Logger tests", () => {
         assertLogging(testCase.expected, testCase.showMessage, () => Logger.getLogger().info(testCase.loggingMessage));
       });
     });
+
+    /**
+     * Tests that everything works when the first dialog result was given.
+     */
+    test("should handle ok result from vscode message", async () => {
+      await assertLoggingWithDialogResult(expected, () =>
+        Logger.getLogger().info({
+          message: LOGGING_MESSAGE,
+          notifyUser: true,
+        })
+      );
+    });
+
+    /**
+     * Tests that everything still works when having an error while handling the shown message from vscode.
+     */
+    test("should work with error while showing the vscode message", async () => {
+      await assertErrorOnShow(expected, /\[error\] Error showing the info message fooError: foo/, () =>
+        Logger.getLogger().info({
+          message: LOGGING_MESSAGE,
+          notifyUser: true,
+        })
+      );
+    });
   });
 
   /**
@@ -215,6 +239,30 @@ suite("Logger tests", () => {
       test(`call warn (${testCase.name})`, () => {
         assertLogging(testCase.expected, testCase.showMessage, () => Logger.getLogger().warn(testCase.loggingMessage));
       });
+    });
+
+    /**
+     * Tests that everything works when the first dialog result was given.
+     */
+    test("should handle ok result from vscode message", async () => {
+      await assertLoggingWithDialogResult(expected, () =>
+        Logger.getLogger().warn({
+          message: LOGGING_MESSAGE,
+          notifyUser: true,
+        })
+      );
+    });
+
+    /**
+     * Tests that everything still works when having an error while handling the shown message from vscode.
+     */
+    test("should work with error while showing the vscode message", async () => {
+      await assertErrorOnShow(expected, /\[error\] Error showing the warning message fooError: foo/, () =>
+        Logger.getLogger().warn({
+          message: LOGGING_MESSAGE,
+          notifyUser: true,
+        })
+      );
     });
   });
 
@@ -263,6 +311,33 @@ suite("Logger tests", () => {
       test(`call error (${testCase.name})`, () => {
         assertLogging(testCase.expected, testCase.showMessage, () => Logger.getLogger().error(testCase.loggingMessage));
       });
+    });
+
+    /**
+     * Tests that the output channel was shown when the button was clicked.
+     */
+    test("should open output channel on error", async () => {
+      const showMethod = Sinon.spy(outputChannel, "show");
+
+      await assertLoggingWithDialogResult(expected, () =>
+        Logger.getLogger().error({
+          message: LOGGING_MESSAGE,
+          notifyUser: true,
+        })
+      );
+      Sinon.assert.calledOnce(showMethod);
+    });
+
+    /**
+     * Tests that everything still works when having an error while handling the shown message from vscode.
+     */
+    test("should work with error while showing the vscode message", async () => {
+      await assertErrorOnShow(expected, /\[error\] Error showing the error message fooError: foo/, () =>
+        Logger.getLogger().error({
+          message: LOGGING_MESSAGE,
+          notifyUser: true,
+        })
+      );
     });
   });
 
@@ -325,12 +400,12 @@ suite("Logger tests", () => {
    * Asserts that the logging is working as expected.
    *
    * @param expected - the expected text that should be written in the file. This text includes the level and message.
-   *     It does not include any timestamp because they are removed before the comparison
+   * It does not include any timestamp because they are removed before the comparison
    * @param showMessage - the verify checks if any of the vscode messages are called to show any info, warn or error message
-   *     If any call happens, then the message of the method will be compared
+   * If any call happens, then the message of the method will be compared
    * @param loggerCall - the call of the log method. This happens after the stubbing initialization
    */
-  function assertLogging(expected: string, showMessage: ShowMessages, loggerCall: () => void) {
+  function assertLogging(expected: string, showMessage: ShowMessages, loggerCall: () => void): void {
     // create necessary spy objects
     const informationMessage = Sinon.spy(vscode.window, "showInformationMessage");
     const warningMessage = Sinon.spy(vscode.window, "showWarningMessage");
@@ -380,10 +455,65 @@ suite("Logger tests", () => {
     // restore all spy objects
     Sinon.restore();
   }
+
+  /**
+   * Asserts the logging, when the first item from the dialog was selected.
+   *
+   * @param expected - the expected message that should be logged
+   * @param loggerCall - the logger call. This should have `notifyUser` to `true`.
+   */
+  async function assertLoggingWithDialogResult(expected: string, loggerCall: () => void): Promise<void> {
+    const selectFirstItem = async (
+      _message: string,
+      _options: vscode.MessageOptions,
+      ...items: vscode.MessageItem[]
+    ): Promise<vscode.MessageItem> => {
+      return items[0];
+    };
+
+    Sinon.stub(vscode.window, "showInformationMessage").callsFake(selectFirstItem);
+    Sinon.stub(vscode.window, "showWarningMessage").callsFake(selectFirstItem);
+    Sinon.stub(vscode.window, "showErrorMessage").callsFake(selectFirstItem);
+
+    fs.writeFileSync(loggingFile, "");
+
+    loggerCall();
+
+    // Wait for the next tick to ensure all async operations are complete, because we are waiting for our async dialog result
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.strictEqual(expected, readLoggingFile(loggingFile), "normal logging file");
+  }
+
+  /**
+   * Assert that an error on the showXXX methods will be handled correctly.
+   *
+   * @param expected - the expected message
+   * @param expectedError - the additional expected message from the logged error
+   * @param loggerCall - the logger call. This should have `notifyUser` to `true`.
+   */
+  async function assertErrorOnShow(expected: string, expectedError: RegExp, loggerCall: () => void): Promise<void> {
+    const errorReturn = Promise.reject(new Error("foo"));
+    Sinon.stub(vscode.window, "showInformationMessage").returns(errorReturn);
+    Sinon.stub(vscode.window, "showWarningMessage").returns(errorReturn);
+    Sinon.stub(vscode.window, "showErrorMessage").returns(errorReturn);
+
+    fs.writeFileSync(loggingFile, "");
+
+    loggerCall();
+
+    // Wait for the next tick to ensure all async operations are complete, because we are waiting for our async dialog result
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const loggingFileContent = readLoggingFile(loggingFile);
+    assert.ok(loggingFileContent.includes(expected), `normal logging file: normal message: ${loggingFileContent}`);
+    assert.match(loggingFileContent, expectedError, "normal logging file: additional error");
+  }
 });
 
 /**
  * Reads the logging file any removes any date time stamps.
+ *
  * @param filename - the file name of the logging file that should be read
  * @returns the content without any timestamps
  */
