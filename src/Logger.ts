@@ -19,7 +19,10 @@ export class Logger {
    * @param logger - the logger that does all the logging
    * @param outputChannel - the output channel were all the messages should be written to
    */
-  private constructor(private logger: winston.Logger, private outputChannel: vscode.OutputChannel) {
+  private constructor(
+    private logger: winston.Logger,
+    private outputChannel: vscode.OutputChannel
+  ) {
     this.logger = logger;
     this.outputChannel = outputChannel;
   }
@@ -242,7 +245,10 @@ class VSCodeOutputChannelTransport extends TransportStream {
    * @param outputChannel - the output channel where any logs should be written
    * @param opts - the options for the transport
    */
-  constructor(private outputChannel: vscode.OutputChannel, opts?: TransportStreamOptions) {
+  constructor(
+    private outputChannel: vscode.OutputChannel,
+    opts?: TransportStreamOptions
+  ) {
     super(opts);
     this.outputChannel = outputChannel;
   }
