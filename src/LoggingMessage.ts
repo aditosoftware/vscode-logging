@@ -13,7 +13,7 @@ export interface LoggingMessageWithLevel extends LoggingMessage {
 /**
  * The logging message that should be logged.
  */
-export interface LoggingMessage {
+export interface LoggingMessage extends MetaInformation {
   /**
    * The message itself.
    *
@@ -35,4 +35,16 @@ export interface LoggingMessage {
    * If there is no stack attribute in the error, then nothing will be logged.
    */
   error?: unknown;
+}
+
+/**
+ * The meta information for any logging message.
+ */
+export interface MetaInformation {
+  /**
+   * Information, if the format should be ignored for any logging to the output channel.
+   *
+   * **NOTE:** This option should be used very carefully. If it is set to `true`, then any stack trace will not be logged to the output.
+   */
+  ignoreFormatForOutputChannel?: boolean;
 }

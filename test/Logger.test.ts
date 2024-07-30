@@ -137,6 +137,18 @@ suite("Logger tests", () => {
         showMessage: {},
         loggingMessage: { message: LOGGING_MESSAGE, error: new Error("dummy") },
       },
+      {
+        name: "with ignoreFormatForOutputChannel set to false (no impact)",
+        expected,
+        showMessage: {},
+        loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: false },
+      },
+      {
+        name: "with ignoreFormatForOutputChannel set to true (no impact)",
+        expected,
+        showMessage: {},
+        loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: true },
+      },
     ];
 
     debugCases.forEach((testCase) => {
@@ -173,6 +185,18 @@ suite("Logger tests", () => {
         expected,
         showMessage: { outputChannel: true },
         loggingMessage: { message: LOGGING_MESSAGE, error: new Error("dummy") },
+      },
+      {
+        name: "with ignoreFormatForOutputChannel set to false (no impact)",
+        expected,
+        showMessage: { outputChannel: true },
+        loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: false },
+      },
+      {
+        name: "with ignoreFormatForOutputChannel set to true",
+        expected,
+        showMessage: { outputChannel: LOGGING_MESSAGE },
+        loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: true },
       },
     ];
     infoCases.forEach((testCase) => {
@@ -233,6 +257,18 @@ suite("Logger tests", () => {
         expected,
         showMessage: { outputChannel: true },
         loggingMessage: { message: LOGGING_MESSAGE, error: new Error("dummy") },
+      },
+      {
+        name: "with ignoreFormatForOutputChannel set to false (no impact)",
+        expected,
+        showMessage: { outputChannel: true },
+        loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: false },
+      },
+      {
+        name: "with ignoreFormatForOutputChannel set to true",
+        expected,
+        showMessage: { outputChannel: LOGGING_MESSAGE },
+        loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: true },
       },
     ];
     warnCases.forEach((testCase) => {
@@ -305,6 +341,24 @@ suite("Logger tests", () => {
         expected: expectedWithError,
         showMessage: { outputChannel: true, errorLog: true, errorMessage: true },
         loggingMessage: { message: LOGGING_MESSAGE, error, notifyUser: true },
+      },
+      {
+        name: "with ignoreFormatForOutputChannel set to false (no impact)",
+        expected,
+        showMessage: { outputChannel: true, errorLog: true },
+        loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: false },
+      },
+      {
+        name: "with ignoreFormatForOutputChannel set to true",
+        expected,
+        showMessage: { outputChannel: LOGGING_MESSAGE, errorLog: true },
+        loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: true },
+      },
+      {
+        name: "with ignoreFormatForOutputChannel set to true and error",
+        expected: expectedWithError,
+        showMessage: { outputChannel: LOGGING_MESSAGE, errorLog: true },
+        loggingMessage: { message: LOGGING_MESSAGE, error, ignoreFormatForOutputChannel: true },
       },
     ];
     errorCases.forEach((testCase) => {
@@ -421,12 +475,15 @@ suite("Logger tests", () => {
     loggerCall();
 
     // assert the logged message
-    assert.strictEqual(expected, readLoggingFile(loggingFile), "normal logging file");
-    assert.strictEqual(showMessage.errorLog ? expected : "", readLoggingFile(errorLogFile), "error logging file");
+    assert.strictEqual(readLoggingFile(loggingFile), expected, "normal logging file");
+    assert.strictEqual(readLoggingFile(errorLogFile), showMessage.errorLog ? expected : "", "error logging file");
 
     // checks that the message was written to the output channel
     if (showMessage.outputChannel) {
-      Sinon.assert.calledWith(appendLine, Sinon.match(expected));
+      Sinon.assert.calledWith(
+        appendLine,
+        Sinon.match(typeof showMessage.outputChannel === "string" ? showMessage.outputChannel : expected)
+      );
     } else {
       Sinon.assert.notCalled(appendLine);
     }
@@ -482,7 +539,7 @@ suite("Logger tests", () => {
     // Wait for the next tick to ensure all async operations are complete, because we are waiting for our async dialog result
     await new Promise((resolve) => setImmediate(resolve));
 
-    assert.strictEqual(expected, readLoggingFile(loggingFile), "normal logging file");
+    assert.strictEqual(readLoggingFile(loggingFile), expected, "normal logging file");
   }
 
   /**
@@ -574,8 +631,10 @@ interface ShowMessages {
 
   /**
    * If the message should be written in the output channel.
+   *
+   * If a `string` was given, then a other message than expected should be written
    */
-  outputChannel?: boolean;
+  outputChannel?: boolean | string;
 
   /**
    * If the message should be written to a second log file for errors (`error.log`).
