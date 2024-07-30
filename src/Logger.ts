@@ -152,7 +152,7 @@ export class Logger {
   /**
    * Creates the additional meta information for any logging message.
    *
-   * @param loggingMessage  - the logging message from which any additional meta information should be created
+   * @param loggingMessage - the logging message from which any additional meta information should be created
    * @returns the created meta information
    */
   private createAdditionalMetaInformation(loggingMessage: LoggingMessage): Required<MetaInformation> {
