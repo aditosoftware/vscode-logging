@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and and th
 
 ## [Unreleased]
 
+## 1.0.2
+
+### Added
+
+- Added `ignoreFormatForOutputChannel` option to remove any timestamp and level information from the output to the VSCode output channel
+
 ## 1.0.1
 
 ### Added

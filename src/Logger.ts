@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import winston from "winston";
 import TransportStream, { TransportStreamOptions } from "winston-transport";
-import { LoggingMessage, LoggingMessageWithLevel } from ".";
+import { LoggingMessage, LoggingMessageWithLevel, MetaInformation } from ".";
 import * as fs from "fs";
 
 /**
@@ -79,7 +79,11 @@ export class Logger {
    * @param loggingMessage - the message that should be logged
    */
   error(loggingMessage: LoggingMessage): void {
-    this.logger.error(loggingMessage.message, loggingMessage.error);
+    this.logger.error(
+      loggingMessage.message,
+      loggingMessage.error,
+      this.createAdditionalMetaInformation(loggingMessage)
+    );
     if (loggingMessage.notifyUser) {
       vscode.window.showErrorMessage(loggingMessage.message, {}, "Open output").then(
         (dialogResult) => {
@@ -102,7 +106,7 @@ export class Logger {
    * @param loggingMessage - the message that should be logged
    */
   warn(loggingMessage: LoggingMessage): void {
-    this.logger.warn(loggingMessage.message);
+    this.logger.warn(loggingMessage.message, this.createAdditionalMetaInformation(loggingMessage));
     if (loggingMessage.notifyUser) {
       vscode.window.showWarningMessage(loggingMessage.message).then(
         // no result to handle
@@ -122,7 +126,7 @@ export class Logger {
    * @param loggingMessage - the message that should be logged
    */
   info(loggingMessage: LoggingMessage): void {
-    this.logger.info(loggingMessage.message);
+    this.logger.info(loggingMessage.message, this.createAdditionalMetaInformation(loggingMessage));
     if (loggingMessage.notifyUser) {
       vscode.window.showInformationMessage(loggingMessage.message).then(
         // no result to handle
@@ -142,7 +146,19 @@ export class Logger {
    * @param loggingMessage - the message that should be logged
    */
   debug(loggingMessage: LoggingMessage): void {
-    this.logger.debug(loggingMessage.message);
+    this.logger.debug(loggingMessage.message, this.createAdditionalMetaInformation(loggingMessage));
+  }
+
+  /**
+   * Creates the additional meta information for any logging message.
+   *
+   * @param loggingMessage - the logging message from which any additional meta information should be created
+   * @returns the created meta information
+   */
+  private createAdditionalMetaInformation(loggingMessage: LoggingMessage): Required<MetaInformation> {
+    return {
+      ignoreFormatForOutputChannel: loggingMessage.ignoreFormatForOutputChannel ?? false,
+    };
   }
 
   /**
@@ -257,8 +273,19 @@ class VSCodeOutputChannelTransport extends TransportStream {
    *@override
    */
   log(info: never, callback: () => void): void {
+    let message: string;
+
+    const meta = info["metadata"] as MetaInformation;
+    if (meta.ignoreFormatForOutputChannel) {
+      // ignore the format, just get the plain message
+      message = info["message"];
+    } else {
+      // default behavior: use the message with the format. This includes timestamp, level, ...
+      message = info[Symbol.for("message")];
+    }
+
     // appends the message to the output channel
-    this.outputChannel.appendLine(info[Symbol.for("message")]);
+    this.outputChannel.appendLine(message);
 
     setImmediate(() => {
       this.emit("logged", info);

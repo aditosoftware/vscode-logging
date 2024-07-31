@@ -4,6 +4,7 @@ node_modules
 .vscode-test/
 *.vsix
 temp
+*.tgz
 
 # results from local testing of pipeline elements
 coverage
