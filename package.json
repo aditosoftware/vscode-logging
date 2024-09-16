@@ -1,6 +1,6 @@
 {
   "name": "@aditosoftware/vscode-logging",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Logging for any vscode extension",
   "license": "MIT",
   "main": "out/src/index.js",
@@ -22,20 +22,20 @@
     "@types/chai": "^4.3.17",
     "@types/chai-fs": "^2.0.5",
     "@types/chai-string": "^1.4.5",
-    "@types/mocha": "^10.0.7",
+    "@types/mocha": "^10.0.8",
     "@types/node": "20.x",
     "@types/sinon": "^17.0.3",
     "@types/vscode": "^1.84.0",
-    "@vscode/test-cli": "^0.0.6",
-    "@vscode/test-electron": "^2.3.9",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
     "chai": "^4.5.0",
     "chai-fs": "^2.0.0",
     "chai-string": "^1.5.0",
-    "sinon": "^17.0.1",
+    "sinon": "^19.0.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "winston": "^3.11.0",
-    "winston-transport": "^4.7.0"
+    "winston": "^3.14.2",
+    "winston-transport": "^4.7.1"
   }
 }

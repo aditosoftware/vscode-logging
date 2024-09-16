@@ -8,12 +8,10 @@ Uncaught exceptions and uncaught rejects are logged as well.
 
 ## Installation
 
-This module is published at [GitLab](https://gitlab.adito.de/plattform/designer/vscode-logging/-/packages) and [Nexus](https://nexus.adito.cloud/#browse/browse:xrm). Please check the corresponding sites on how to add the npm repository to your project.
-
-After you have added the repository to your project, you can install it normally.
+You can install this dependency normally.
 
 ```shell
-npm i @aditosoftware/vscode-logging
+npm install @aditosoftware/vscode-logging
 ```
 
 ## Usage
