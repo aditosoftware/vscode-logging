@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         node-version: [18.x, 20.x, 22.x]
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-13, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
 
       - name: Check npm versions
         run: npm -v
-        
+
       - name: Run clean install
         run: npm ci
 
