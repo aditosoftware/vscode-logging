@@ -8,6 +8,10 @@
   "files": [
     "out/src"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aditosoftware/vscode-logging.git"
+  },
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc --watch -p ./",
