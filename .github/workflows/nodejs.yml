@@ -70,9 +70,6 @@ jobs:
       - name: Run tests with coverage
         run: xvfb-run -a npm test  -- --coverage --coverage-output ./coverage --coverage-reporter lcovonly --reporter mocha-multi-reporters  --reporter-options configFile=config.json
 
-      - name: check xml files
-        run: ls | grep .xml
-
       - name: Analyze with SonarCloud
         uses: SonarSource/sonarcloud-github-action@master
         env:
@@ -81,5 +78,4 @@ jobs:
           args: -Dsonar.projectKey=aditosoftware_vscode-logging
             -Dsonar.organization=aditosoftware
             -Dsonar.eslint.reportPaths=eslint-results.json
-            -Dsonar.testExecutionReportPaths=xunit.xml
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
