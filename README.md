@@ -1,5 +1,10 @@
 # vscode-logging
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=aditosoftware_vscode-logging&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=aditosoftware_vscode-logging)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=aditosoftware_vscode-logging&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=aditosoftware_vscode-logging)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=aditosoftware_vscode-logging&metric=coverage)](https://sonarcloud.io/summary/new_code?id=aditosoftware_vscode-logging)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=aditosoftware_vscode-logging&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=aditosoftware_vscode-logging)
+
 This is used to add a simple and easy to use logging to any VS Code extension.
 
 The key idea is that you do not need to call `vscode.window.showInformationMessage` (or similar methods) and do not need to write any additional logs, because this module will take care of everything.
