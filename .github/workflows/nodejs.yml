@@ -1,7 +1,12 @@
 name: Build Project
 
 on:
+  push:
+    branches: ["main"]
   pull_request:
+
+permissions:
+  pull-requests: read # allows SonarCloud to decorate PRs with analysis results
 
 jobs:
   build:
@@ -16,12 +21,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Check Node.js version
-        run: node -v
 
-      - name: Check npm versions
-        run: npm -v
-
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: node_modules-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            node_modules-${{ matrix.os }}-node-${{ matrix.node-version }}
       - name: Run clean install
         run: npm ci
 
@@ -29,3 +36,47 @@ jobs:
         if: runner.os == 'Linux'
       - run: npm test
         if: runner.os != 'Linux'
+
+  sonar:
+    name: Run eslint and sonar scanning
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Restore cached node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: node_modules-ubuntu-latest-node-22.x-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            node_modules-ubuntu-latest-node-22.x
+      - name: Run ESLint
+        run: npm run lint -- --format json --output-file eslint-results.json || true
+
+      - name: Install Mocha reporters
+        run: npm install -d mocha-multi-reporters mocha-junit-reporter mocha-sonarqube-reporter
+      - name: create mocha config
+        run: |
+          echo '{
+            "reporterEnabled": "spec, mocha-junit-reporter, mocha-sonarqube-reporter"
+          }' > config.json
+      - name: Run tests with coverage
+        run: xvfb-run -a npm test  -- --coverage --coverage-output ./coverage --coverage-reporter lcovonly --reporter mocha-multi-reporters  --reporter-options configFile=config.json
+
+      - name: Analyze with SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: -Dsonar.projectKey=aditosoftware_vscode-logging
+            -Dsonar.organization=aditosoftware
+            -Dsonar.eslint.reportPaths=eslint-results.json
+            -Dsonar.testExecutionReportPaths=xunit.xml
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
