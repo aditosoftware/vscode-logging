@@ -23,7 +23,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Cache node_modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: node_modules
           key: node_modules-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
@@ -51,7 +51,7 @@ jobs:
           node-version: 22.x
 
       - name: Restore cached node_modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: node_modules
           key: node_modules-ubuntu-latest-node-22.x-${{ hashFiles('package-lock.json') }}
@@ -69,6 +69,9 @@ jobs:
           }' > config.json
       - name: Run tests with coverage
         run: xvfb-run -a npm test  -- --coverage --coverage-output ./coverage --coverage-reporter lcovonly --reporter mocha-multi-reporters  --reporter-options configFile=config.json
+
+      - name: check xml files
+        run: ls | grep .xml
 
       - name: Analyze with SonarCloud
         uses: SonarSource/sonarcloud-github-action@master
