@@ -24,7 +24,7 @@
   "devDependencies": {
     "@aditosoftware/eslint-config-adito-platform": "latest",
     "@types/mocha": "^10.0.8",
-    "@types/node": "22.x",
+    "@types/node": "24.x",
     "@types/sinon": "^17.0.3",
     "@types/vscode": "^1.84.0",
     "@vscode/test-cli": "^0.0.11",
