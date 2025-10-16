@@ -7,18 +7,12 @@ on:
   release:
     types: [created]
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 20
-      - run: npm ci
+permissions:
+  id-token: write  # Required for OIDC
+  contents: read
 
+jobs:
   publish-npm:
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -26,8 +20,10 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
+      - name: Update npm
+        run: npm install -g npm@latest
+      - run: npm -v
       - run: npm ci
       - run: npm run compile
-      - run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+      - run: npm test
+      - run: npm publish
