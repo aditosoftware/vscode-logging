@@ -28,5 +28,9 @@
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "editor.tabSize": 2
+  "editor.tabSize": 2,
+  "sonarlint.connectedMode.project": {
+    "connectionId": "SonarCloud - aditosoftware",
+    "projectKey": "aditosoftware_vscode-logging"
+  }
 }
