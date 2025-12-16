@@ -550,6 +550,9 @@ suite("Logger tests", () => {
 
     loggerCall();
 
+    // Wait a bit after the logging call. This might update the logs.
+    await new Promise((r) => setTimeout(r, 1_000));
+
     // Wait for the next tick to ensure all async operations are complete, because we are waiting for our async dialog result
     await new Promise((resolve) => setImmediate(resolve));
 
