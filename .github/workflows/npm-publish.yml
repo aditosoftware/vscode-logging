@@ -23,7 +23,7 @@ jobs:
       - name: Update npm
         run: npm install -g npm@latest
       - run: npm -v
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run compile
       - run: xvfb-run -a npm test
       - run: npm publish
