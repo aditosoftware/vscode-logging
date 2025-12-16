@@ -21,7 +21,7 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org/
       - name: Update npm
-        run: npm install -g npm@latest
+        run: npm install --ignore-scripts -g npm@latest
       - run: npm -v
       - run: npm ci --ignore-scripts
       - run: npm run compile

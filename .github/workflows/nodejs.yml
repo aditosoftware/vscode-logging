@@ -61,7 +61,7 @@ jobs:
         run: npm run lint -- --format json --output-file eslint-results.json || true
 
       - name: Install Mocha reporters
-        run: npm install -d mocha-multi-reporters mocha-junit-reporter mocha-sonarqube-reporter
+        run: npm install --ignore-scripts -d mocha-multi-reporters mocha-junit-reporter mocha-sonarqube-reporter
       - name: create mocha config
         run: |
           echo '{
