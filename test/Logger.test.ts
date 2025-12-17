@@ -170,8 +170,8 @@ suite("Logger tests", () => {
     ];
 
     debugCases.forEach((testCase) => {
-      test(`call debug (${testCase.name})`, () => {
-        assertLogging(testCase.expected, testCase.showMessage, () => Logger.getLogger().debug(testCase.loggingMessage));
+      test(`call debug (${testCase.name})`, async () => {
+        await assertLogging(testCase.expected, testCase.showMessage, testCase.loggingMessage, "debug");
       });
     });
   });
@@ -203,8 +203,8 @@ suite("Logger tests", () => {
       createArgumentWithIgnoreFormatForOutputChannel(expected, { outputChannel: LOGGING_MESSAGE }),
     ];
     infoCases.forEach((testCase) => {
-      test(`call info (${testCase.name})`, () => {
-        assertLogging(testCase.expected, testCase.showMessage, () => Logger.getLogger().info(testCase.loggingMessage));
+      test(`call info (${testCase.name})`, async () => {
+        await assertLogging(testCase.expected, testCase.showMessage, testCase.loggingMessage, "info");
       });
     });
 
@@ -260,8 +260,8 @@ suite("Logger tests", () => {
       createArgumentWithIgnoreFormatForOutputChannel(expected, { outputChannel: LOGGING_MESSAGE }),
     ];
     warnCases.forEach((testCase) => {
-      test(`call warn (${testCase.name})`, () => {
-        assertLogging(testCase.expected, testCase.showMessage, () => Logger.getLogger().warn(testCase.loggingMessage));
+      test(`call warn (${testCase.name})`, async () => {
+        await assertLogging(testCase.expected, testCase.showMessage, testCase.loggingMessage, "warn");
       });
     });
 
@@ -340,8 +340,8 @@ suite("Logger tests", () => {
       },
     ];
     errorCases.forEach((testCase) => {
-      test(`call error (${testCase.name})`, () => {
-        assertLogging(testCase.expected, testCase.showMessage, () => Logger.getLogger().error(testCase.loggingMessage));
+      test(`call error (${testCase.name})`, async () => {
+        await assertLogging(testCase.expected, testCase.showMessage, testCase.loggingMessage, "error");
       });
     });
 
@@ -408,8 +408,8 @@ suite("Logger tests", () => {
       },
     ];
     logCases.forEach((testCase) => {
-      test(`call log (${testCase.name})`, () => {
-        assertLogging(testCase.expected, testCase.showMessage, () => Logger.getLogger().log(testCase.loggingMessage));
+      test(`call log (${testCase.name})`, async () => {
+        await assertLogging(testCase.expected, testCase.showMessage, testCase.loggingMessage, "log");
       });
     });
   });
@@ -435,9 +435,15 @@ suite("Logger tests", () => {
    * It does not include any timestamp because they are removed before the comparison
    * @param showMessage - the verify checks if any of the vscode messages are called to show any info, warn or error message
    * If any call happens, then the message of the method will be compared
-   * @param loggerCall - the call of the log method. This happens after the stubbing initialization
+   * @param loggingMessage - the message that should be logged
+   * @param loggingLevel - the level with which it should be logged. If `log` is given, then the `loggingMessage` needs to be an `LoggingMessageWithLevel`
    */
-  function assertLogging(expected: string, showMessage: ShowMessages, loggerCall: () => void): void {
+  async function assertLogging(
+    expected: string,
+    showMessage: ShowMessages,
+    loggingMessage: LoggingMessage | LoggingMessageWithLevel,
+    loggingLevel: "debug" | "info" | "warn" | "error" | "log"
+  ): Promise<void> {
     // create necessary spy objects
     const informationMessage = Sinon.spy(vscode.window, "showInformationMessage");
     const warningMessage = Sinon.spy(vscode.window, "showWarningMessage");
@@ -450,7 +456,26 @@ suite("Logger tests", () => {
     fs.writeFileSync(errorLogFile, "");
 
     // do the logger call
-    loggerCall();
+    switch (loggingLevel) {
+      case "debug":
+        Logger.getLogger().debug(loggingMessage);
+        break;
+      case "info":
+        Logger.getLogger().info(loggingMessage);
+        break;
+      case "warn":
+        Logger.getLogger().warn(loggingMessage);
+        break;
+      case "error":
+        Logger.getLogger().error(loggingMessage);
+        break;
+      case "log":
+        Logger.getLogger().log(loggingMessage as LoggingMessageWithLevel);
+        break;
+    }
+
+    // Wait a bit after the logging call. This might update the logs.
+    await new Promise((r) => setTimeout(r, 1_000));
 
     // assert the logged message
     assert.strictEqual(readLoggingFile(loggingFile), expected, "normal logging file");
@@ -536,6 +561,9 @@ suite("Logger tests", () => {
     fs.writeFileSync(loggingFile, "");
 
     loggerCall();
+
+    // Wait a bit after the logging call. This might update the logs.
+    await new Promise((r) => setTimeout(r, 1_000));
 
     // Wait for the next tick to ensure all async operations are complete, because we are waiting for our async dialog result
     await new Promise((resolve) => setImmediate(resolve));
