@@ -23,7 +23,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Cache node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: node_modules
           key: node_modules-${{ matrix.os }}-node-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
@@ -51,7 +51,7 @@ jobs:
           node-version: 22.x
 
       - name: Restore cached node_modules
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: node_modules
           key: node_modules-ubuntu-latest-node-22.x-${{ hashFiles('package-lock.json') }}
