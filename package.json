@@ -29,6 +29,9 @@
     "@types/vscode": "^1.84.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.4.1",
+    "mocha-junit-reporter": "^2.2.1",
+    "mocha-multi-reporters": "^1.5.1",
+    "mocha-sonarqube-reporter": "^1.0.2",
     "sinon": "^21.0.0",
     "typescript": "^5.3.3"
   },

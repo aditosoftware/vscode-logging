@@ -59,8 +59,6 @@ jobs:
       - name: Run ESLint
         run: npm run lint -- --format json --output-file eslint-results.json || true
 
-      - name: Install Mocha reporters
-        run: npm install --ignore-scripts -d mocha-multi-reporters mocha-junit-reporter mocha-sonarqube-reporter
       - name: create mocha config
         run: |
           echo '{
@@ -70,7 +68,7 @@ jobs:
         run: xvfb-run -a npm test  -- --coverage --coverage-output ./coverage --coverage-reporter lcovonly --reporter mocha-multi-reporters  --reporter-options configFile=config.json
 
       - name: Analyze with SonarCloud
-        uses: SonarSource/sonarqube-scan-action@v7
+        uses: SonarSource/sonarqube-scan-action@299e4b793aaa83bf2aba7c9c14bedbb485688ec4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
