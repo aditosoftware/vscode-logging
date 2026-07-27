@@ -15,7 +15,7 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - name: Set up Node.js
         uses: actions/setup-node@v7.0.0
         with:
@@ -44,7 +44,7 @@ jobs:
       pull-requests: read # allows SonarCloud to decorate PRs with analysis results
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Node.js
         uses: actions/setup-node@v7.0.0
