@@ -45,6 +45,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7.0.1
+        # full history and all branch refs are needed, so the sonar scanner can
+        # resolve the base branch `main` for the new code period calculation
+        # (otherwise it warns: "Could not find ref 'main' in refs/heads, ...")
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v7.1.0
@@ -78,3 +83,7 @@ jobs:
             -Dsonar.organization=aditosoftware
             -Dsonar.eslint.reportPaths=eslint-results.json
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.sources=.
+            -Dsonar.exclusions=**/*.ttf,**/*.woff,**/*.woff2,**/*.jar,**/*.png,**/*.jpg,**/*.jpeg,**/*.gif,**/*.ico,**/*.mp4,**/*.vsix,test/**,out/**,dist/**
+            -Dsonar.tests=test/
+            -Dsonar.typescript.tsconfigPaths=tsconfig.json
