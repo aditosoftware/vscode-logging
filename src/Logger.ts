@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import winston from "winston";
 import TransportStream, { TransportStreamOptions } from "winston-transport";
 import { LoggingMessage, LoggingMessageWithLevel, MetaInformation } from ".";
-import * as fs from "fs";
+import * as fs from "node:fs";
 
 /**
  * A logger to log to the log file, output and window message.
@@ -40,6 +40,85 @@ export class Logger {
   }
 
   /**
+   * Initializes the logger. This needs to be done in the `activate` method of the extension.
+   *
+   * @param context - the context where the logger needs to be registered.
+   * @param name - the name of the extension. This will be also used as the name for the output channel as well as the name for the main file
+   */
+  static initializeLogger(context: vscode.ExtensionContext, name: string): void {
+    // create output channel for any logging
+    const outputChannel = vscode.window.createOutputChannel(name);
+    context.subscriptions.push(outputChannel);
+
+    // created the log folder, if it does not exist
+    if (!fs.existsSync(context.logUri.fsPath)) {
+      fs.mkdirSync(context.logUri.fsPath, { recursive: true });
+    }
+
+    // and create a logger
+    const logger = winston.createLogger({
+      level: "debug",
+      exitOnError: false,
+      format: winston.format.combine(
+        winston.format.simple(),
+        winston.format.metadata(),
+        winston.format.timestamp({
+          format: "YYYY-MM-DD HH:mm:ss",
+        }),
+        // The format will add a stack, if this was given in the meta information. This will only happen in the error log.
+        winston.format.printf(
+          (info) => `${info.timestamp} [${info.level}] ${info.message}${info?.metadata?.stack || ""}`
+        )
+      ),
+      transports: [
+        // log everything to the output channel with info level or higher
+        new VSCodeOutputChannelTransport(outputChannel, {
+          level: "info",
+        }),
+        // log in in a file with the name of the extension and output channel everything
+        new winston.transports.File({
+          dirname: context.logUri.fsPath,
+          filename: `${outputChannel.name}.log`,
+        }),
+        // separate file for every error log, including uncaught exceptions und rejections
+        new winston.transports.File({
+          level: "error",
+          dirname: context.logUri.fsPath,
+          filename: `error.log`,
+          handleExceptions: true,
+          handleRejections: true,
+        }),
+      ],
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+      // add a console logger when not in production
+      logger.add(
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.colorize(),
+            winston.format.printf((info) => `[${info.level}]: ${info.message}${info?.metadata?.stack || ""}`)
+          ),
+        })
+      );
+    }
+
+    // and create the instance
+    this.instance = new Logger(logger, outputChannel);
+  }
+
+  /**
+   * Ends the logging.
+   * This should be called in the deactivate method.
+   * After this method call, no more logging is possible.
+   */
+  static end(): void {
+    if (this.instance) {
+      this.instance.logger.end();
+    }
+  }
+
+  /**
    * Reveal this channel in the UI.
    *
    * @param preserveFocus - When `true` the channel will not take focus.
@@ -55,18 +134,22 @@ export class Logger {
    */
   log(loggingMessage: LoggingMessageWithLevel): void {
     switch (loggingMessage.level) {
-      case "error":
+      case "error": {
         this.error(loggingMessage);
         break;
-      case "warn":
+      }
+      case "warn": {
         this.warn(loggingMessage);
         break;
-      case "info":
+      }
+      case "info": {
         this.info(loggingMessage);
         break;
-      case "debug":
+      }
+      case "debug": {
         this.debug(loggingMessage);
         break;
+      }
     }
   }
 
@@ -150,6 +233,15 @@ export class Logger {
   }
 
   /**
+   * Clears the output channel.
+   */
+  clear(): void {
+    if (this) {
+      this.outputChannel.clear();
+    }
+  }
+
+  /**
    * Creates the additional meta information for any logging message.
    *
    * @param loggingMessage - the logging message from which any additional meta information should be created
@@ -159,94 +251,6 @@ export class Logger {
     return {
       ignoreFormatForOutputChannel: loggingMessage.ignoreFormatForOutputChannel ?? false,
     };
-  }
-
-  /**
-   * Initializes the logger. This needs to be done in the `activate` method of the extension.
-   *
-   * @param context - the context where the logger needs to be registered.
-   * @param name - the name of the extension. This will be also used as the name for the output channel as well as the name for the main file
-   */
-  static initializeLogger(context: vscode.ExtensionContext, name: string): void {
-    // create output channel for any logging
-    const outputChannel = vscode.window.createOutputChannel(name);
-    context.subscriptions.push(outputChannel);
-
-    // created the log folder, if it does not exist
-    if (!fs.existsSync(context.logUri.fsPath)) {
-      fs.mkdirSync(context.logUri.fsPath, { recursive: true });
-    }
-
-    // and create a logger
-    const logger = winston.createLogger({
-      level: "debug",
-      exitOnError: false,
-      format: winston.format.combine(
-        winston.format.simple(),
-        winston.format.metadata(),
-        winston.format.timestamp({
-          format: "YYYY-MM-DD HH:mm:ss",
-        }),
-        // The format will add a stack, if this was given in the meta information. This will only happen in the error log.
-        winston.format.printf(
-          (info) => `${info.timestamp} [${info.level}] ${info.message}${info?.metadata?.stack || ""}`
-        )
-      ),
-      transports: [
-        // log everything to the output channel with info level or higher
-        new VSCodeOutputChannelTransport(outputChannel, {
-          level: "info",
-        }),
-        // log in in a file with the name of the extension and output channel everything
-        new winston.transports.File({
-          dirname: context.logUri.fsPath,
-          filename: `${outputChannel.name}.log`,
-        }),
-        // separate file for every error log, including uncaught exceptions und rejections
-        new winston.transports.File({
-          level: "error",
-          dirname: context.logUri.fsPath,
-          filename: `error.log`,
-          handleExceptions: true,
-          handleRejections: true,
-        }),
-      ],
-    });
-
-    if (process.env.NODE_ENV !== "production") {
-      // add a console logger when not in production
-      logger.add(
-        new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.colorize(),
-            winston.format.printf((info) => `[${info.level}]: ${info.message}${info?.metadata?.stack || ""}`)
-          ),
-        })
-      );
-    }
-
-    // and create the instance
-    this.instance = new Logger(logger, outputChannel);
-  }
-
-  /**
-   * Ends the logging.
-   * This should be called in the deactivate method.
-   * After this method call, no more logging is possible.
-   */
-  static end(): void {
-    if (this.instance) {
-      this.instance.logger.end();
-    }
-  }
-
-  /**
-   * Clears the output channel.
-   */
-  clear(): void {
-    if (this) {
-      this.outputChannel.clear();
-    }
   }
 }
 
@@ -259,18 +263,18 @@ class VSCodeOutputChannelTransport extends TransportStream {
    * Creates the custom transport for any logs.
    *
    * @param outputChannel - the output channel where any logs should be written
-   * @param opts - the options for the transport
+   * @param options - the options for the transport
    */
   constructor(
     private readonly outputChannel: vscode.OutputChannel,
-    opts?: TransportStreamOptions
+    options?: TransportStreamOptions
   ) {
-    super(opts);
+    super(options);
     this.outputChannel = outputChannel;
   }
 
   /**
-   *@override
+   * @override
    */
   log(info: never, callback: () => void): void {
     let message: string;
