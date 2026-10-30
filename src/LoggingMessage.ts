@@ -28,7 +28,7 @@ export interface LoggingMessage extends MetaInformation {
    */
   notifyUser?: boolean;
 
-  /*
+  /**
    * Any optional error from any catch block. These errors will only be logged, if you have the log level to `error`.
    *
    * If the error includes a stack attribute (which the exception does), then the error will be logged.
