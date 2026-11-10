@@ -1,8 +1,8 @@
 import { Logger, LoggingMessage, LoggingMessageWithLevel } from "../src";
-import assert from "assert";
+import assert from "node:assert";
 import * as vscode from "vscode";
-import path from "path";
-import * as fs from "fs";
+import path from "node:path";
+import * as fs from "node:fs";
 import Sinon from "sinon";
 
 /**
@@ -38,39 +38,6 @@ suite("Logger tests", () => {
    * The output channel for later spying. This will be set after the creation in `suiteSetup`.
    */
   let outputChannel: vscode.OutputChannel;
-
-  const createArgumentsWithNotUsedError = (expected: string, showMessage: ShowMessages): TestCase<LoggingMessage> => {
-    return {
-      name: "with not used error",
-      expected,
-      showMessage,
-      loggingMessage: { message: LOGGING_MESSAGE, error: new Error("dummy") },
-    };
-  };
-
-  const createArgumentWithIgnoreFormatToFalseForOutputChannel = (
-    expected: string,
-    showMessage: ShowMessages
-  ): TestCase<LoggingMessage> => {
-    return {
-      name: "with ignoreFormatForOutputChannel set to false (no impact)",
-      expected,
-      showMessage,
-      loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: false },
-    };
-  };
-
-  const createArgumentWithIgnoreFormatForOutputChannel = (
-    expected: string,
-    showMessage: ShowMessages
-  ): TestCase<LoggingMessage> => {
-    return {
-      name: "with ignoreFormatForOutputChannel set to true",
-      expected,
-      showMessage,
-      loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: true },
-    };
-  };
 
   /**
    * Initializes the logger and checks if the initialization was valid.
@@ -169,11 +136,14 @@ suite("Logger tests", () => {
       createArgumentWithIgnoreFormatForOutputChannel(expected, {}),
     ];
 
-    debugCases.forEach((testCase) => {
+    for (const testCase of debugCases) {
+      /**
+       * Tests the debug logging of the current test case.
+       */
       test(`call debug (${testCase.name})`, async () => {
         await assertLogging(testCase.expected, testCase.showMessage, testCase.loggingMessage, "debug");
       });
-    });
+    }
   });
 
   /**
@@ -202,11 +172,14 @@ suite("Logger tests", () => {
       createArgumentWithIgnoreFormatToFalseForOutputChannel(expected, { outputChannel: true }),
       createArgumentWithIgnoreFormatForOutputChannel(expected, { outputChannel: LOGGING_MESSAGE }),
     ];
-    infoCases.forEach((testCase) => {
+    for (const testCase of infoCases) {
+      /**
+       * Tests the info logging of the current test case.
+       */
       test(`call info (${testCase.name})`, async () => {
         await assertLogging(testCase.expected, testCase.showMessage, testCase.loggingMessage, "info");
       });
-    });
+    }
 
     /**
      * Tests that everything works when the first dialog result was given.
@@ -259,11 +232,14 @@ suite("Logger tests", () => {
       createArgumentWithIgnoreFormatToFalseForOutputChannel(expected, { outputChannel: true }),
       createArgumentWithIgnoreFormatForOutputChannel(expected, { outputChannel: LOGGING_MESSAGE }),
     ];
-    warnCases.forEach((testCase) => {
+    for (const testCase of warnCases) {
+      /**
+       * Tests the warn logging of the current test case.
+       */
       test(`call warn (${testCase.name})`, async () => {
         await assertLogging(testCase.expected, testCase.showMessage, testCase.loggingMessage, "warn");
       });
-    });
+    }
 
     /**
      * Tests that everything works when the first dialog result was given.
@@ -296,7 +272,7 @@ suite("Logger tests", () => {
   suite("error", () => {
     // overwrite the stack of the error to test it better
     const error = new Error("unit test");
-    error.stack = " - my stack trace";
+    Object.defineProperty(error, "stack", { value: " - my stack trace" });
 
     const expected = "[error] myMessage";
     const expectedWithError = "[error] myMessage unit test - my stack trace";
@@ -339,11 +315,14 @@ suite("Logger tests", () => {
         loggingMessage: { message: LOGGING_MESSAGE, error, ignoreFormatForOutputChannel: true },
       },
     ];
-    errorCases.forEach((testCase) => {
+    for (const testCase of errorCases) {
+      /**
+       * Tests the error logging of the current test case.
+       */
       test(`call error (${testCase.name})`, async () => {
         await assertLogging(testCase.expected, testCase.showMessage, testCase.loggingMessage, "error");
       });
-    });
+    }
 
     /**
      * Tests that the output channel was shown when the button was clicked.
@@ -407,11 +386,14 @@ suite("Logger tests", () => {
         loggingMessage: { level: "error", message: LOGGING_MESSAGE },
       },
     ];
-    logCases.forEach((testCase) => {
+    for (const testCase of logCases) {
+      /**
+       * Tests the log logging of the current test case.
+       */
       test(`call log (${testCase.name})`, async () => {
         await assertLogging(testCase.expected, testCase.showMessage, testCase.loggingMessage, "log");
       });
-    });
+    }
   });
 
   /**
@@ -457,25 +439,30 @@ suite("Logger tests", () => {
 
     // do the logger call
     switch (loggingLevel) {
-      case "debug":
+      case "debug": {
         Logger.getLogger().debug(loggingMessage);
         break;
-      case "info":
+      }
+      case "info": {
         Logger.getLogger().info(loggingMessage);
         break;
-      case "warn":
+      }
+      case "warn": {
         Logger.getLogger().warn(loggingMessage);
         break;
-      case "error":
+      }
+      case "error": {
         Logger.getLogger().error(loggingMessage);
         break;
-      case "log":
+      }
+      case "log": {
         Logger.getLogger().log(loggingMessage as LoggingMessageWithLevel);
         break;
+      }
     }
 
     // Wait a bit after the logging call. This might update the logs.
-    await new Promise((r) => setTimeout(r, 1_000));
+    await new Promise((r) => setTimeout(r, 1000));
 
     // assert the logged message
     assert.strictEqual(readLoggingFile(loggingFile), expected, "normal logging file");
@@ -563,7 +550,7 @@ suite("Logger tests", () => {
     loggerCall();
 
     // Wait a bit after the logging call. This might update the logs.
-    await new Promise((r) => setTimeout(r, 1_000));
+    await new Promise((r) => setTimeout(r, 1000));
 
     // Wait for the next tick to ensure all async operations are complete, because we are waiting for our async dialog result
     await new Promise((resolve) => setImmediate(resolve));
@@ -582,12 +569,12 @@ suite("Logger tests", () => {
  */
 function readLoggingFile(filename: string): string {
   assert.ok(fs.existsSync(filename), "logging file is there");
-  const fileContent = fs.readFileSync(filename, { encoding: "utf-8" });
+  const fileContent = fs.readFileSync(filename, { encoding: "utf8" });
 
   // Date Pattern is YYYY-MM-DD HH:mm:ss
   const dateRegex = /\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/g;
   // remove the from the log file
-  return fileContent.replace(dateRegex, "").trim();
+  return fileContent.replaceAll(dateRegex, "").trim();
 }
 
 /**
@@ -646,4 +633,58 @@ interface ShowMessages {
    * If the message should be written to a second log file for errors (`error.log`).
    */
   errorLog?: boolean;
+}
+
+/**
+ * Creates a test case that logs a message with an additional error that is not used in the log output.
+ *
+ * @param expected - the expected text that should be written in the log file
+ * @param showMessage - information, where besides the standard log file the message should also be visible
+ * @returns the created test case
+ */
+function createArgumentsWithNotUsedError(expected: string, showMessage: ShowMessages): TestCase<LoggingMessage> {
+  return {
+    name: "with not used error",
+    expected,
+    showMessage,
+    loggingMessage: { message: LOGGING_MESSAGE, error: new Error("dummy") },
+  };
+}
+
+/**
+ * Creates a test case that logs a message with `ignoreFormatForOutputChannel` explicitly set to `false`.
+ *
+ * @param expected - the expected text that should be written in the log file
+ * @param showMessage - information, where besides the standard log file the message should also be visible
+ * @returns the created test case
+ */
+function createArgumentWithIgnoreFormatToFalseForOutputChannel(
+  expected: string,
+  showMessage: ShowMessages
+): TestCase<LoggingMessage> {
+  return {
+    name: "with ignoreFormatForOutputChannel set to false (no impact)",
+    expected,
+    showMessage,
+    loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: false },
+  };
+}
+
+/**
+ * Creates a test case that logs a message with `ignoreFormatForOutputChannel` set to `true`.
+ *
+ * @param expected - the expected text that should be written in the log file
+ * @param showMessage - information, where besides the standard log file the message should also be visible
+ * @returns the created test case
+ */
+function createArgumentWithIgnoreFormatForOutputChannel(
+  expected: string,
+  showMessage: ShowMessages
+): TestCase<LoggingMessage> {
+  return {
+    name: "with ignoreFormatForOutputChannel set to true",
+    expected,
+    showMessage,
+    loggingMessage: { message: LOGGING_MESSAGE, ignoreFormatForOutputChannel: true },
+  };
 }

@@ -32,5 +32,6 @@
   "sonarlint.connectedMode.project": {
     "connectionId": "SonarCloud - aditosoftware",
     "projectKey": "aditosoftware_vscode-logging"
-  }
+  },
+  "js/ts.tsdk.path": "node_modules\\typescript\\lib"
 }
